@@ -1,32 +1,47 @@
 import express from "express";
-import authRoutes from "./routes/auth.js"; // Ensure path is correct
-import dotenv from "dotenv"
-import {connectDB} from "./lib/db.js"
-import cookieParser from "cookie-parser"
-import messageRoutes from "./routes/message.routes.js"
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
-dotenv.config()
-const PORT = process.env.PORT
+import { connectDB } from "./lib/db.js";
+import authRoutes from "./routes/auth.js";
+import messageRoutes from "./routes/message.routes.js";
+import { app, server } from "./lib/socket.js";
 
-const app = express();
+dotenv.config();
 
-// Middleware
+const PORT = process.env.PORT || 5000;
+
+// ✅ Fix __dirname issue in ES Module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Middleware
 app.use(express.json());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-// Cookie-parser
-// app.use(cookieParser.json());
+// ✅ Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/messages", messageRoutes);
 
-// Routes
-// app.use("/api/auth", authRoutes);
-// //message
-// app.use("/api/message", messageRoutes);
+// ✅ Serve Frontend in Production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+  });
+}
 
-// app.get("/", (req, res) => {
-//     res.send("Server is running successfully!");
-// });
-
-// Start the server
-app.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
-    connectDB();
+// ✅ Start Server
+server.listen(PORT, () => {
+  console.log(`Server is running on PORT: ${PORT}`);
+  connectDB();
 });

@@ -13,4 +13,4 @@ expiresIn:"7d",
     });
 
     return token;
-}
+};
